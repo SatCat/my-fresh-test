@@ -1,6 +1,10 @@
 import { useSignal } from "@preact/signals";
 import Counter from "../islands/Counter.tsx";
 
+Deno.cron("Log a message", "*/3 * * * *", () => {
+  console.log("Ping");
+});
+
 export default function Home() {
   const count = useSignal(3);
   return (
