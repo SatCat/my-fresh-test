@@ -1,24 +1,44 @@
-import { useSignal } from "@preact/signals";
-import Counter from "../islands/Counter.tsx";
+// routes/index.tsx
+import { Handlers, PageProps } from "$fresh/server.ts";
+import { getTodos, saveTodos, Todo } from "../data/todos.ts";
+import TodoList from "../islands/TodoList.tsx";
 
-export default function Home() {
-  const count = useSignal(3);
+export const handler: Handlers<Todo[]> = {
+  async GET(_req, ctx) {
+    const todos = await getTodos();
+    return ctx.render(todos);
+  },
+
+  async POST(req) {
+    const form = await req.formData();
+    const text = form.get("text")?.toString().trim();
+    if (!text) return new Response("Bad", { status: 400 });
+
+    const todos = await getTodos();
+    todos.push({ id: crypto.randomUUID(), text, done: false });
+    await saveTodos(todos);
+
+    return new Response("", { status: 303, headers: { Location: "/" } });
+  },
+};
+
+export default function Home({ data: todos }: PageProps<Todo[]>) {
   return (
-    <div class="px-4 py-8 mx-auto bg-[#86efac]">
-      <div class="max-w-screen-md mx-auto flex flex-col items-center justify-center">
-        <img
-          class="my-6"
-          src="/logo.svg"
-          width="128"
-          height="128"
-          alt="the Fresh logo: a sliced lemon dripping with juice"
+    <div class="p-8 max-w-md mx-auto">
+      <h1 class="text-3xl font-bold mb-4">Fresh To-Do</h1>
+
+      <form method="post" class="flex gap-2 mb-4">
+        <input
+          name="text"
+          class="border rounded px-2 py-1 flex-1"
+          placeholder="Новая задача…"
+          required
         />
-        <h1 class="text-4xl font-bold">Welcome and Hello!</h1>
-        <p class="my-4">
-          Tap buttons!
-        </p>
-        <Counter count={count} />
-      </div>
+        <button class="bg-blue-600 text-white px-3 py-1 rounded">+</button>
+      </form>
+
+      {/* остров */}
+      <TodoList todos={todos} />
     </div>
   );
 }
